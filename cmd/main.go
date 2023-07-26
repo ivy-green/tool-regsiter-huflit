@@ -5,15 +5,20 @@ import (
 )
 
 func main() {
-	username := "21DH110592"
-	password := "9.G2U2WryL_Q2Jj"
+	username := ""
+	password := ""
 	client := huflit.NewHuflitScraper()
 	var registers []huflit.Register
 	registers = append(registers, huflit.Register{
 		Code:       "1230723",
 		Name:       "Đồ án phần mềm",
-		FirstCode:  "231123072310",
-		SecondCode: "231123072337",
+		FirstCode:  "231123072313",
+		SecondCode: "231123072344",
+	})
+	registers = append(registers, huflit.Register{
+		Code:      "1010462",
+		Name:      "Chủ nghĩa xã hội khoa học",
+		FirstCode: "231101046218",
 	})
 	client.StartJob(username, password, registers)
 

@@ -1,6 +1,7 @@
 package huflit
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,8 +17,9 @@ type Term struct {
 	Subjects  []Subject
 }
 
-func (scraper *HuflitScraper) GetTerms() ([]Term, error) {
-	resp, err := scraper.httpGet("https://dkmh.huflit.edu.vn/DangKyHocPhan/DanhSachHocPhan?typeId=KH&id=", nil)
+func (scraper *HuflitScraper) GetTerms(typeId string) ([]Term, error) {
+	url := fmt.Sprintf("https://dkmh.huflit.edu.vn/DangKyHocPhan/DanhSachHocPhan?typeId=%v&id=", typeId)
+	resp, err := scraper.httpGet(url, nil)
 	if err != nil {
 		return nil, err
 	}

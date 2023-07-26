@@ -3,6 +3,8 @@ package huflit
 import (
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -15,19 +17,20 @@ type Subject struct {
 
 type RegisterResp struct {
 	State bool        `json:"State"`
-	Obj   string      `json:"Obj"`
+	Obj   interface{} `json:"Obj"`
 	Obj1  interface{} `json:"Obj1"`
 	Obj2  interface{} `json:"Obj2"`
 	Msg   string      `json:"Msg"`
 }
 
-func (scraper *HuflitScraper) GetClassStudyUnit(requestId string, registType string) ([]Subject, error) {
+func (scraper *HuflitScraper) GetClassStudyUnit(register Register, requestId string, registType string) ([]Subject, error) {
 	url := fmt.Sprintf("https://dkmh.huflit.edu.vn/DangKyHocPhan/DanhSachLopHocPhan?id=%v&registType=%v", requestId, registType)
 	resp, err := scraper.httpGet(url, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	writeHTMLToFile("data.html", resp.Bytes())
 	document, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return nil, err
@@ -53,23 +56,37 @@ func (scraper *HuflitScraper) GetClassStudyUnit(requestId string, registType str
 		subjects = append(subjects, subject)
 	})
 
-	var practicalSubjects map[string]Subject
-	document.Find(".tr-no-hover").Each(func(_ int, tr *goquery.Selection) {
-		tr.Find("tr").Each(func(_ int, trClass *goquery.Selection) {
-			subject := Subject{}
-			trClass.Find("td").Each(func(i int, td *goquery.Selection) {
-				if i == 1 {
-					subject.Code = strings.TrimSpace(td.Text())
-				}
-				val, exists := td.Find(`.classCheckChon`).Attr("id")
+	practicalSubjects := make(map[string]Subject, 0)
+
+	selector := fmt.Sprintf("#tr-of-%v", register.FirstCode)
+	document.Find(selector).Each(func(_ int, trClass *goquery.Selection) {
+
+		trClass.Find("tr").Each(func(i int, tdElement *goquery.Selection) {
+			code := tdElement.Find("td[style=\"text-align:center\"]").Eq(1).Text()
+			if code != "" {
+				val, exists := tdElement.Find(`.classCheckChon`).Attr("id")
 				if exists {
-					subject.RequestId = val
+					//subject.RequestId = val
+					practicalSubjects[code] = Subject{
+						Code:      code,
+						RequestId: val,
+					}
 				}
-			})
-			if subject.Code != "" {
-				practicalSubjects[subject.Code] = subject
 			}
 		})
+		//trClass.Find("td").Each(func(i int, td *goquery.Selection) {
+		//	log.Println(td.Text())
+		//	if i == 1 {
+		//		subject.Code = strings.TrimSpace(td.Text())
+		//	}
+		//	val, exists := td.Find(`.classCheckChon`).Attr("id")
+		//	if exists {
+		//		subject.RequestId = val
+		//	}
+		//})
+		//if subject.Code != "" {
+		//	practicalSubjects[subject.Code] = subject
+		//}
 	})
 
 	for _, subject := range practicalSubjects {
@@ -85,6 +102,8 @@ func (scraper *HuflitScraper) RegisterSubject(firstRequestId, secondRequestId st
 	}
 	// https://dkmh.huflit.edu.vn/DangKyHocPhan/RegistUpdateScheduleStudyUnit?Hide=iqhcfeZlCkP2wJbeIWovVGXmVDNWkd1hLthhZ1A9lJUpGiEEStVARS1H+meXmaEY26MSLfpCAig=|&ScheduleStudyUnitOld=&acceptConflict=
 	url := fmt.Sprintf("https://dkmh.huflit.edu.vn/DangKyHocPhan/RegistUpdateScheduleStudyUnit?Hide=%v|%v&ScheduleStudyUnitOld=&acceptConflict=", firstRequestId, secondRequestId)
+	log.Println(url)
+	//return nil, nil
 	resp, err := scraper.httpGet(url, nil)
 	if err != nil {
 		return nil, err
@@ -100,4 +119,19 @@ func (scraper *HuflitScraper) RegisterSubject(firstRequestId, secondRequestId st
 	}
 
 	return &registerResp, nil
+}
+
+func writeHTMLToFile(fileName string, content []byte) error {
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(content)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

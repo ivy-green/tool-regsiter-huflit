@@ -7,18 +7,18 @@ import (
 )
 
 func (scraper *HuflitScraper) StartJob(username, password string, registers []Register) {
-	_, err := scraper.Login(username, password)
-	if err != nil {
-		log.Error().Err(err).Msg("cannot login")
-		return
-	}
-	if err := scraper.GetSessionDKMH(); err != nil {
-		log.Error().Err(err).Msg("cannot get session")
-		return
-	}
+	//_, err := scraper.Login(username, password)
+	//if err != nil {
+	//	log.Error().Err(err).Msg("cannot login")
+	//	return
+	//}
+	//if err := scraper.GetSessionDKMH(); err != nil {
+	//	log.Error().Err(err).Msg("cannot get session")
+	//	return
+	//}
 
-	//scraper.client.SetCommonHeader("Cookie", "User=21DH110592; UserPW=A5AD3206605D5494DDD2D66E53B97814; ASP.NET_SessionId=tot2qkt2hbbankvb41rdg5h2; UserID=21DH110592")
-	terms, err := scraper.GetTerms()
+	scraper.client.SetCommonHeader("Cookie", "ASP.NET_SessionId=ujgct3didhrl0oumqcbpckme; User=19DH110082; UserPW=0596F7A388BA87782E99AB3CB983ADF4; UserID=19DH110082")
+	terms, err := scraper.GetTerms("NKH")
 	if err != nil {
 		log.Error().Err(err).Msg("cannot fetch terms")
 		return
@@ -29,18 +29,18 @@ func (scraper *HuflitScraper) StartJob(username, password string, registers []Re
 		for _, register := range registers {
 			if term.Code == register.Code {
 				wg.Add(1)
-				go func() {
+				go func(register Register, requestId string) {
 					defer wg.Done()
-					scraper.fetchSubjectAndRegister(register, term.RequestId)
-				}()
+					scraper.fetchSubjectAndRegister(register, requestId, "NKH")
+				}(register, term.RequestId)
 			}
 		}
 	}
 	wg.Wait()
 }
 
-func (scraper *HuflitScraper) fetchSubjectAndRegister(register Register, requestId string) {
-	subjects, err := scraper.GetClassStudyUnit(requestId, "KH")
+func (scraper *HuflitScraper) fetchSubjectAndRegister(register Register, requestId string, registType string) {
+	subjects, err := scraper.GetClassStudyUnit(register, requestId, registType)
 	if err != nil {
 		log.Error().Err(err).Msg("cannot fetch class")
 		return
@@ -64,7 +64,7 @@ func (scraper *HuflitScraper) fetchSubjectAndRegister(register Register, request
 	}
 
 	if registerResp.State == true {
-		log.Info().Str("name", register.Name).Str("id", register.Code).Msg("register successfully")
+		log.Info().Str("name", register.Name).Str("id", register.Code).Str("msg", registerResp.Msg).Msg("register successfully")
 	} else {
 		log.Info().Str("name", register.Name).Str("id", register.Code).Str("msg", registerResp.Msg).Msg("register failed")
 	}
