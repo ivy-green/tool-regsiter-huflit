@@ -1,6 +1,7 @@
 package huflit
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -21,6 +22,7 @@ func (scraper *HuflitScraper) Login(username, password string) (*StudentInfo, er
 		"Origin":       "https://portal.huflit.edu.vn",
 		"Referer":      "https://portal.huflit.edu.vn/Login",
 	}
+
 	resp, err := scraper.httpPost("https://portal.huflit.edu.vn/Login", data, headers)
 	if err != nil {
 		return nil, err
@@ -32,7 +34,7 @@ func (scraper *HuflitScraper) Login(username, password string) (*StudentInfo, er
 	}
 
 	loginMessage := strings.TrimSpace(document.Find(".loginbox-forgot").Text())
-	if loginMessage == "Tên đăng nhập hoặc mật khẩu không chính xác" {
+	if loginMessage == "Tên đăng nhập hoặc mật khẩu không chính xác" || loginMessage == "Tình trạng học của sinh viên không được phép đăng nhập." {
 		return nil, ErrLoginFailed
 	}
 
@@ -50,10 +52,18 @@ func (scraper *HuflitScraper) Login(username, password string) (*StudentInfo, er
 }
 
 func (scraper *HuflitScraper) GetSessionDKMH() error {
-	_, err := scraper.httpGet("https://portal.huflit.edu.vn/Home/DangKyHocPhan", nil)
+	resp, err := scraper.httpGet("https://portal.huflit.edu.vn/Home/DangKyHocPhan", nil)
+	if err != nil {
+		return err
+	}
+	document, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return err
 	}
 
+	notificationMessage, exists := document.Find("#txtThongbao").Attr("value")
+	if exists {
+		return errors.New(notificationMessage)
+	}
 	return nil
 }

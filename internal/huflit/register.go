@@ -5,6 +5,7 @@ type Register struct {
 	Code       string
 	FirstCode  string
 	SecondCode string
+	RequestId  string
 }
 
 func (r *Register) IsSingleSubject() bool {

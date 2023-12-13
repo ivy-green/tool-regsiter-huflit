@@ -3,7 +3,6 @@ package huflit
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -102,7 +101,7 @@ func (scraper *HuflitScraper) RegisterSubject(firstRequestId, secondRequestId st
 	}
 	// https://dkmh.huflit.edu.vn/DangKyHocPhan/RegistUpdateScheduleStudyUnit?Hide=iqhcfeZlCkP2wJbeIWovVGXmVDNWkd1hLthhZ1A9lJUpGiEEStVARS1H+meXmaEY26MSLfpCAig=|&ScheduleStudyUnitOld=&acceptConflict=
 	url := fmt.Sprintf("https://dkmh.huflit.edu.vn/DangKyHocPhan/RegistUpdateScheduleStudyUnit?Hide=%v|%v&ScheduleStudyUnitOld=&acceptConflict=", firstRequestId, secondRequestId)
-	log.Println(url)
+	//log.Println(url)
 	//return nil, nil
 	resp, err := scraper.httpGet(url, nil)
 	if err != nil {
